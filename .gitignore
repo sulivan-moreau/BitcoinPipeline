@@ -1,0 +1,15 @@
+.env
+data/raw/
+data/processed/
+__pycache__/
+.venv/
+*.pyc
+*.egg-info/
+dist/
+.pytest_cache/
+*.jar
+derby.log
+metastore_db/
+.DS_Store
+data/logs/
+!data/logs/.gitkeep
