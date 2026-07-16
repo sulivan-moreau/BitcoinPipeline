@@ -50,13 +50,16 @@ une base de données et un système big data.
 
 ## 6. Services externes
 
-| Source | Type | Service |
-|---|---|---|
-| API REST | Service web | CoinGecko API (public, sans clé) |
-| Scraping | Page web | Page HTML publique de cotation BTC |
-| Fichier | CSV | Historique BTC (Kaggle, statique) |
-| Base de données | SQL | Table `historical_prices` (SQLite/Postgres de test) |
-| Big data | Fichier Parquet | Archive de test lue via PySpark |
+Le projet compare le prix du Bitcoin sur plusieurs exchanges, chacun collecté
+par une méthode d'extraction différente exigée par le référentiel (C1/C2) :
+
+| Source | Type | Exchange / origine | Rôle |
+|---|---|---|---|
+| API REST | Service web | CoinGecko (agrégateur public, sans clé) | Prix de référence agrégé |
+| Scraping | Page web | Kraken (page de cotation publique) | Comparaison exchange 1 |
+| Fichier | CSV | Coinbase (dataset historique) | Comparaison exchange 2 |
+| Base de données | SQL | Bitstamp (historique chargé en table locale) | Comparaison exchange 3 |
+| Big data | Fichier Parquet | Bitfinex (archive de ticks, traitée via PySpark) | Comparaison exchange 4 |
 
 ## 7. Exigences de programmation
 
