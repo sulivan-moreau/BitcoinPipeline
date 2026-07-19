@@ -10,12 +10,19 @@ données unique, homogène et exploitable par l'API (C5).
 
 | Dépendance | Rôle |
 |---|---|
-| Python stdlib (datetime) | Parsing et normalisation des timestamps |
+| pandas | Fusion des 5 sources en un DataFrame unique, homogénéisation et tri |
+| Python stdlib (datetime) | Parsing des timestamps individuels avant passage en DataFrame |
 | Les 5 modules src/extract/*.py | Sources de données brutes |
 | src/utils/logger.py | Traçabilité de chaque étape |
 
-Aucune dépendance externe supplémentaire : normalize.py n'utilise que la
-stdlib et les collectors déjà développés.
+**Pourquoi pandas ?** Une fois les 5 dicts validés, il s'agit de les traiter
+comme un tableau unique (une ligne par source) : arrondir une colonne,
+reformater deux colonnes de dates, trier — exactement ce pour quoi pandas
+est fait. La validation (`is_valid_entry`) reste en Python pur, car chaque
+rejet a besoin d'un message d'erreur précis par entrée, qu'une opération
+pandas vectorisée masquerait. Une agrégation multi-sources complémentaire,
+côté relationnel cette fois (jointure SQL entre deux tables), est démontrée
+séparément dans `src/aggregate_sql.py` (voir `docs/sql_queries.md`, Requête 5).
 
 ## Commandes
 
@@ -50,18 +57,21 @@ doit jamais empêcher la collecte des 4 autres.
 
 Chaque rejet est loggé avec la source concernée et la raison précise.
 
-### Étape 3 — Homogénéisation des formats
+### Étape 3 — Fusion et homogénéisation via pandas
 
-`homogenize()` normalise chaque entrée valide :
-- `price_usd` arrondi à 2 décimales
+Les entrées valides sont chargées dans un `DataFrame` pandas (une ligne par
+source), puis homogénéisées en une passe vectorisée :
+- `price_usd` arrondi à 2 décimales (`Series.round(2)`)
 - `timestamp` et `collected_at` reformatés en ISO 8601 strict avec suffixe
   `Z` (UTC explicite), même si le format d'origine variait légèrement
   entre les sources (avec ou sans microsecondes)
 
 ### Étape 4 — Tri et sortie finale
 
-Le résultat est trié par ordre alphabétique de `source`, pour une sortie
-stable et reproductible d'une exécution à l'autre.
+Le DataFrame est trié par ordre alphabétique de `source`
+(`sort_values("source")`), pour une sortie stable et reproductible d'une
+exécution à l'autre, puis reconverti en liste de dicts (`to_dict("records")`)
+pour le reste du pipeline (persist.py, API).
 
 ## Point d'attention : hétérogénéité temporelle des sources
 

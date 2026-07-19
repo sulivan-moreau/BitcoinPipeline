@@ -58,3 +58,4 @@ CREATE TABLE IF NOT EXISTS users (
 | `timestamp`/`collected_at` en TIMESTAMPTZ | Stocke le fuseau horaire explicitement (UTC), cohérent avec le format ISO 8601 + Z produit par normalize.py |
 | Pas de clé étrangère entre BITCOIN_PRICE et USER | Aucune relation métier entre les deux ; les mélanger introduirait un couplage artificiel |
 | Table `historical_prices_bitstamp` (créée en brique 6) non reprise ici | C'est une table de préparation/test pour le collector BDD, pas une donnée finale du pipeline — elle reste dans son propre script de seed |
+| Tables `coinbase_prices` et `bitstamp_prices_2022_sample` non reprises ici | Tables de préparation pour la jointure SQL multi-sources documentée dans `docs/sql_queries.md` (Requête 5) et `src/aggregate_sql.py` — même raison que `historical_prices_bitstamp` : ce ne sont pas des données finales du pipeline |

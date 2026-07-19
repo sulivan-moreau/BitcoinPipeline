@@ -54,6 +54,14 @@ uv run python scripts/seed_bitstamp.py
 uv run python scripts/convert_bitfinex_parquet.py
 ```
 
+Pour la jointure SQL multi-sources (C3, voir `docs/sql_queries.md`), lancer
+en plus, **dans cet ordre** (le second dépend des données du premier) :
+
+```bash
+uv run python scripts/seed_coinbase.py
+uv run python scripts/seed_bitstamp_join_sample.py
+```
+
 ## Lancer le pipeline complet
 
 ```bash
@@ -73,6 +81,16 @@ uv run python -m src.extract.file_collector
 uv run python -m src.extract.db_collector
 uv run python -m src.extract.bigdata_collector
 ```
+
+## Agrégation SQL multi-sources (JOIN)
+
+```bash
+uv run python -m src.aggregate_sql
+```
+
+Jointure SQL (2 CTE + `JOIN`) entre Bitstamp et Coinbase, comparant leurs prix
+heure par heure — nécessite d'avoir lancé au préalable
+`scripts/seed_coinbase.py` puis `scripts/seed_bitstamp_join_sample.py`.
 
 ## Lancer l'API
 
@@ -101,7 +119,8 @@ curl http://localhost:8000/prices \
 BitcoinPipeline/
 ├── src/
 │   ├── extract/       # Les 5 collecteurs (C1, C2)
-│   ├── normalize.py   # Agrégation multi-sources (C3)
+│   ├── normalize.py   # Agrégation multi-sources en Python (C3)
+│   ├── aggregate_sql.py # Agrégation multi-sources en SQL, via JOIN (C3)
 │   ├── persist.py     # Import en base + export CSV (C4)
 │   └── api/            # API REST FastAPI + JWT (C5)
 ├── scripts/            # Scripts one-shot de préparation des données

@@ -3,11 +3,15 @@
 Ce module fusionne les résultats des 5 collectors du pipeline (API
 CoinGecko, scraping Kraken, fichier Coinbase, base de données Bitstamp, big
 data Bitfinex) en un jeu de données unique : collecte tolérante aux pannes,
-suppression des entrées corrompues, puis homogénéisation des formats
-(prix arrondi, timestamps ISO 8601 UTC stricts).
+suppression des entrées corrompues, puis fusion et homogénéisation des
+formats via un DataFrame pandas (prix arrondi, timestamps ISO 8601 UTC
+stricts). Un complément SQL de cette agrégation (jointure entre deux
+sources directement en base) est disponible dans src/aggregate_sql.py.
 """
 
 from datetime import UTC, datetime
+
+import pandas as pd
 
 from src.extract import (
     api_collector,
@@ -98,35 +102,37 @@ def _to_strict_iso_z(value: str) -> str:
     return dt.isoformat().replace("+00:00", "Z")
 
 
-def homogenize(entry: dict) -> dict:
-    """Homogénéise une entrée valide vers un format de sortie strict et stable.
-
-    Deux normalisations : le prix est arrondi à 2 décimales (les sources
-    n'ont pas toutes la même précision, ex. l'API contre le scraping) et les
-    timestamps sont réécrits en UTC explicite avec suffixe "Z" plutôt que
-    "+00:00", pour garantir un format identique quelle que soit la source
-    d'origine (avec ou sans microsecondes). Ne mute jamais l'entrée reçue.
-    """
-    return {
-        **entry,
-        "price_usd": round(float(entry["price_usd"]), 2),
-        "timestamp": _to_strict_iso_z(entry["timestamp"]),
-        "collected_at": _to_strict_iso_z(entry["collected_at"]),
-    }
-
-
 def merge_and_clean(raw_results: list[dict], logger) -> list[dict]:
     """Filtre les entrées corrompues, homogénéise le reste et trie par source.
 
+    La validation (is_valid_entry) reste en Python pur : chaque rejet a
+    besoin d'un message d'erreur précis par entrée, ce qu'une opération
+    vectorisée pandas masquerait. En revanche, la fusion des sources en un
+    jeu de données unique, son homogénéisation (arrondi du prix, timestamps
+    stricts) et son tri sont faits via un DataFrame pandas plutôt qu'en
+    Python pur : c'est exactement l'outil adapté pour manipuler plusieurs
+    enregistrements hétérogènes (une ligne par source) comme un tableau
+    unique, et homogénéiser ses colonnes en une seule passe vectorisée.
     Le tri alphabétique par source garantit une sortie stable d'une
     exécution à l'autre, indépendamment de l'ordre (non déterministe côté
     réseau) dans lequel les collectors ont répondu.
     """
-    valid_entries = [entry for entry in raw_results if is_valid_entry(entry, logger)]
-    cleaned = [homogenize(entry) for entry in valid_entries]
-    cleaned.sort(key=lambda entry: entry["source"])
-
     n_total = len(raw_results)
+
+    valid_entries = [entry for entry in raw_results if is_valid_entry(entry, logger)]
+
+    if not valid_entries:
+        logger.info(f"[NORMALIZE] 0/{n_total} entrées retenues après nettoyage ({n_total} rejetées)")
+        return []
+
+    df = pd.DataFrame(valid_entries)
+    df["price_usd"] = df["price_usd"].astype(float).round(2)
+    df["timestamp"] = df["timestamp"].apply(_to_strict_iso_z)
+    df["collected_at"] = df["collected_at"].apply(_to_strict_iso_z)
+    df = df.sort_values("source").reset_index(drop=True)
+
+    cleaned = df.to_dict("records")
+
     n_valides = len(cleaned)
     n_rejetees = n_total - n_valides
     logger.info(f"[NORMALIZE] {n_valides}/{n_total} entrées retenues après nettoyage ({n_rejetees} rejetées)")

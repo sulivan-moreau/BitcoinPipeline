@@ -5,6 +5,8 @@
 --   - bitcoin_prices  -> src/persist.py
 --   - users           -> src/api/services/auth_service.py
 --   - historical_prices_bitstamp -> scripts/seed_bitstamp.py
+--   - coinbase_prices -> scripts/seed_coinbase.py
+--   - bitstamp_prices_2022_sample -> scripts/seed_bitstamp_join_sample.py
 
 -- Jeu de données final du pipeline (C3, C4)
 CREATE TABLE IF NOT EXISTS bitcoin_prices (
@@ -25,6 +27,31 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Échantillon de test pour le collecteur BDD Bitstamp (C2)
 CREATE TABLE IF NOT EXISTS historical_prices_bitstamp (
+    id SERIAL PRIMARY KEY,
+    ts_unix BIGINT NOT NULL,
+    open NUMERIC,
+    high NUMERIC,
+    low NUMERIC,
+    close NUMERIC,
+    volume NUMERIC,
+    UNIQUE(ts_unix)
+);
+
+-- Historique Coinbase, pour la jointure SQL multi-sources (C3)
+CREATE TABLE IF NOT EXISTS coinbase_prices (
+    id SERIAL PRIMARY KEY,
+    ts_unix BIGINT NOT NULL,
+    open NUMERIC,
+    high NUMERIC,
+    low NUMERIC,
+    close NUMERIC,
+    volume NUMERIC,
+    UNIQUE(ts_unix)
+);
+
+-- Échantillon Bitstamp recalé sur la période Coinbase (2022), pour permettre
+-- un chevauchement temporel lors de la jointure SQL (C3, voir src/aggregate_sql.py)
+CREATE TABLE IF NOT EXISTS bitstamp_prices_2022_sample (
     id SERIAL PRIMARY KEY,
     ts_unix BIGINT NOT NULL,
     open NUMERIC,
