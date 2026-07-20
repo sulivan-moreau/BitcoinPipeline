@@ -16,6 +16,7 @@ load_dotenv()
 
 from src.utils.db import get_engine
 from src.utils.logger import get_logger
+from src.utils.results import save_last_result
 
 logger = get_logger("db_collector")
 
@@ -125,6 +126,7 @@ def run() -> list[dict]:
         return []
 
     result = normalize_result(raw)
+    save_last_result(result["source"], [result])
     logger.info("[DB] Collecte terminée | 1 prix récupéré (Bitstamp)")
     return [result]
 

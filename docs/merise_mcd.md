@@ -9,7 +9,34 @@ administrateur nécessaire pour sécuriser l'API (C5).
 
 ## MCD — Modèle Conceptuel de Données
 
+### Diagramme
+
+```mermaid
+erDiagram
+    BITCOIN_PRICE {
+        int id PK "identifiant"
+        string source
+        decimal price_usd
+        datetime timestamp
+        datetime collected_at
+    }
+    USER {
+        int id PK "identifiant"
+        string username UK
+        string hashed_password
+        datetime created_at
+    }
+```
+
+Aucune ligne de relation entre BITCOIN_PRICE et USER sur ce diagramme, et donc
+aucune cardinalité à noter entre les deux : ce sont deux entités totalement
+indépendantes, la table USER ne sert qu'à l'authentification de l'API, pas à
+qualifier les données de prix. L'absence de relation est elle-même un choix
+de modélisation assumé (voir tableau "Choix de modélisation" ci-dessous),
+pas un oubli.
+
 ### Entités et attributs
+
 BITCOIN_PRICE
 
 id (identifiant)
@@ -24,11 +51,6 @@ id (identifiant)
 username
 hashed_password
 created_at
-
-
-Aucune relation entre BITCOIN_PRICE et USER : ce sont deux entités
-indépendantes, la table USER ne sert qu'à l'authentification de l'API,
-pas à qualifier les données de prix.
 
 ## MPD — Modèle Physique de Données
 

@@ -12,6 +12,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.utils.logger import get_logger
+from src.utils.results import save_last_result
 
 CSV_PATH = Path("data/raw/kaggle/BTC-Hourly.csv")
 
@@ -107,6 +108,7 @@ def run() -> list[dict]:
         return []
 
     result = normalize_result(raw)
+    save_last_result(result["source"], [result])
     logger.info("[FILE] Collecte terminée | 1 prix récupéré (Coinbase)")
     return [result]
 

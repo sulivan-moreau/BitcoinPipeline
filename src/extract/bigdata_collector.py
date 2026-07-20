@@ -19,6 +19,7 @@ from pyspark.sql import functions as F
 from pyspark.sql.functions import col, desc
 
 from src.utils.logger import get_logger
+from src.utils.results import save_last_result
 
 PARQUET_PATH = Path("data/raw/bigdata/bitfinex_btcusd.parquet")
 
@@ -152,6 +153,7 @@ def run() -> list[dict]:
             return []
 
         result = normalize_result(raw)
+        save_last_result(result["source"], [result])
         logger.info("[SPARK] Collecte terminée | 1 prix récupéré (Bitfinex)")
         return [result]
     finally:

@@ -10,6 +10,7 @@ la référence agrégée obtenue via l'API CoinGecko.
 """
 
 import re
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -17,6 +18,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from src.utils.logger import get_logger
+from src.utils.results import save_last_result
 
 SCRAPING_URL = "https://www.coinlore.com/coin/bitcoin/exchanges"
 RAW_HTML_PATH = Path("data/raw/scraping/coinlore_exchanges.html")
@@ -35,16 +37,24 @@ def fetch_html(logger) -> str | None:
     """Récupère le HTML de la page exchanges CoinLore et le sauvegarde pour traçabilité.
 
     Gère les erreurs sans jamais lever d'exception : timeout, erreur réseau
-    ou statut HTTP différent de 200. Retourne None en cas d'échec.
+    ou statut HTTP différent de 200. Une seule tentative de retry après 2s en
+    cas de timeout ou d'erreur réseau transitoire (pas de retry sur un statut
+    HTTP non-200 type 403, où réessayer immédiatement n'aiderait pas). Retourne
+    None si l'échec persiste après ce retry.
     """
     try:
         response = requests.get(SCRAPING_URL, headers=HEADERS, timeout=15)
-    except requests.Timeout:
-        logger.warning("[SCRAPING] Timeout lors de la récupération de la page CoinLore")
-        return None
-    except requests.RequestException as exc:
-        logger.warning(f"[SCRAPING] Erreur réseau lors de la récupération de la page CoinLore : {exc}")
-        return None
+    except (requests.Timeout, requests.RequestException) as exc:
+        logger.warning(f"[SCRAPING] Erreur lors de la récupération de la page CoinLore ({exc}), nouvelle tentative dans 2s")
+        time.sleep(2)
+        try:
+            response = requests.get(SCRAPING_URL, headers=HEADERS, timeout=15)
+        except requests.Timeout:
+            logger.warning("[SCRAPING] Timeout lors du retry sur CoinLore")
+            return None
+        except requests.RequestException as exc2:
+            logger.warning(f"[SCRAPING] Erreur réseau lors du retry sur CoinLore : {exc2}")
+            return None
 
     if response.status_code != 200:
         logger.warning(f"[SCRAPING] Statut HTTP inattendu sur CoinLore : {response.status_code}")
@@ -179,6 +189,7 @@ def run() -> list[dict]:
         return []
 
     result = normalize_result(price)
+    save_last_result(result["source"], [result])
     logger.info("[SCRAPING] Collecte terminée | 1 prix récupéré (Kraken)")
     return [result]
 

@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 import requests
 
 from src.utils.logger import get_logger
+from src.utils.results import save_last_result
 
 COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price"
 # Optionnelle : aucune clé n'est requise pour cet endpoint public, mais la
@@ -94,6 +95,7 @@ def run() -> list[dict]:
         return []
 
     result = normalize_result(raw)
+    save_last_result(result["source"], [result])
     logger.info("[API] Collecte terminée | 1 prix récupéré")
     return [result]
 
