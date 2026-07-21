@@ -53,14 +53,18 @@ def init_spark(logger) -> SparkSession | None:
 def load_data(spark: SparkSession, logger) -> DataFrame | None:
     """Charge l'archive Parquet Bitfinex et filtre les lignes exploitables.
 
-    Ne garde que les lignes où "close" n'est pas null : les ticks sans
-    transaction n'ont pas de valeur de clôture exploitable pour le pipeline.
+    Ne garde que les colonnes "time" et "close" : aucune fonction de ce
+    module n'a besoin de open/high/low/volume, donc la projection est faite
+    ici, à la lecture, pour que Spark ne lise que ces deux colonnes sur le
+    disque (format Parquet colonnaire). Ne garde que les lignes où "close"
+    n'est pas null : les ticks sans transaction n'ont pas de valeur de
+    clôture exploitable pour le pipeline.
     """
     if not PARQUET_PATH.exists():
         logger.error("[SPARK] Fichier Parquet introuvable — lancez scripts/convert_bitfinex_parquet.py")
         return None
 
-    df = spark.read.parquet(str(PARQUET_PATH))
+    df = spark.read.parquet(str(PARQUET_PATH)).select("time", "close")
     df = df.filter(col("close").isNotNull())
 
     logger.info(f"[SPARK] {df.count()} lignes chargées depuis l'archive Bitfinex")
