@@ -87,9 +87,12 @@ Les 5 sources n'ont pas la même fraîcheur de données, et c'est volontaire :
 
 Les écarts de prix observés entre sources ne sont donc pas des anomalies :
 ils reflètent la nature de chaque source (temps réel vs archive historique
-figée). Ce point est assumé et documenté plutôt que masqué, car le projet
-vise à démontrer 5 méthodes d'extraction différentes, pas à produire un
-comparateur de prix en temps réel strict.
+figée). Exemple observé le 20/07/2026 : les sources temps réel (CoinGecko,
+scraping Kraken) et l'échantillon Bitstamp tournaient autour de 64 000 $,
+tandis que l'archive Bitfinex, un instantané figé datant d'octobre 2023,
+donnait un prix autour de 27 900 $. Ce point est assumé et documenté plutôt
+que masqué, car le projet vise à démontrer 5 méthodes d'extraction
+différentes, pas à produire un comparateur de prix en temps réel strict.
 
 ## Choix de nettoyage documentés
 
